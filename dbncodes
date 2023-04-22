@@ -1,0 +1,39 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+
+# Train veri setini yükleme ve ayırma
+train_data = pd.read_csv("mitbih_train.csv")
+X_train = train_data.iloc[:, :-1]
+y_train = train_data.iloc[:, -1]
+
+# Test veri setini yükleme ve ayırma
+test_data = pd.read_csv("mitbih_test.csv")
+X_test = test_data.iloc[:, :-1]
+y_test = test_data.iloc[:, -1]
+
+# Özellikleri ölçeklendirme
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# DBN modeli oluşturma
+model = Sequential()
+model.add(Dense(units=256, activation='relu', input_dim=X_train.shape[1]))
+model.add(Dropout(0.2))
+model.add(Dense(units=128, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(units=64, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(units=1, activation='sigmoid'))
+
+# Modeli eğitme
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.1)
+
+# Model performansını değerlendirme
+accuracy = model.evaluate(X_test, y_test)
+print("Accuracy: {:.2f}%".format(accuracy[1] * 100))
