@@ -1,0 +1,59 @@
+import keras
+#import tensoflow.keras
+from keras.datasets import mnist
+from keras.models import Sequential
+from keras.layers import CuDNNLSTM, Dense, Dropout
+from keras.optimizers import Adam
+
+# Importing the data
+#(X_train, y_train), (X_test, y_test) = mnist.load_data('mitbih_test.csv','mitbih_train.csv')
+import pandas as pd
+import numpy as np
+
+# Loading the data from CSV files
+train_df = pd.read_csv('mitbih_train.csv', header=None)
+test_df = pd.read_csv('mitbih_test.csv', header=None)
+
+# Splitting the data into input and output variables
+X_train = train_df.iloc[:, :-1].values
+y_train = train_df.iloc[:, -1].values
+X_test = test_df.iloc[:, :-1].values
+y_test = test_df.iloc[:, -1].values
+
+# Reshaping the data
+X_train = X_train.reshape(-1, 187, 1) # each sample has 187 time steps and 1 feature
+X_test = X_test.reshape(-1, 187, 1) # each sample has 187 time steps and 1 feature
+
+# Normalizing the data
+X_train = X_train / 255.0
+X_test = X_test / 255.0
+
+# Converting the output variable to categorical
+y_train = y_train.astype(int) # convert to integers
+y_train = np.eye(5)[y_train] # 5 classes in the data
+y_test = y_test.astype(int) # convert to integers
+y_test = np.eye(5)[y_test] # 5 classes in the data
+
+# Initializing the classifier Network
+classifier = Sequential()
+
+# Adding the input LSTM network layer
+classifier.add(CuDNNLSTM(128, input_shape=(28, 28), return_sequences=True))
+classifier.add(Dropout(0.2))
+
+# Adding a second LSTM network layer
+classifier.add(CuDNNLSTM(128, return_sequences=True))
+classifier.add(Dropout(0.2))
+
+# Adding a dense hidden layer
+classifier.add(Dense(64, activation='relu'))
+classifier.add(Dropout(0.2))
+
+# Adding the output layer
+classifier.add(Dense(10, activation='softmax'))
+
+# Compiling the network
+#classifier.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0))
+classifier.compile(loss='sparse_categorical_crossentropy',
+                   optimizer=Adam(learning_rate=0.001, decay=1e-6),
+                   metrics=['accuracy'])
